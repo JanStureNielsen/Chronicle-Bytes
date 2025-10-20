@@ -477,19 +477,19 @@ public class BytesMarshaller<T> {
         protected void setValue(Object o, BytesIn<?> read)
                 throws ClosedIllegalStateException, IllegalArgumentException, BufferUnderflowException, BufferOverflowException, ArithmeticException, IllegalAccessException {
             Map m = (Map) field.get(o);
-            long length = read.readStopBit();
-            if (length < 0) {
+            int numEntries = Maths.toInt32(read.readStopBit());
+            if (numEntries < 0) {
                 if (m != null)
                     field.set(o, null);
                 return;
             }
-            BytesUtil.checkArrayLength(Maths.toInt32(length), read.readRemaining());
+            BytesUtil.checkArrayLength(numEntries, read.readRemaining());
             if (m == null) {
                 field.set(o, m = collectionSupplier.get());
             } else {
                 m.clear();
             }
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < numEntries; i++) {
                 m.put(read.readObject(keyType), read.readObject(valueType));
             }
         }

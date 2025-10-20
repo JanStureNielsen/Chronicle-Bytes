@@ -61,6 +61,7 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
     private static final long CAPACITY = 0;
     private static final long USED = CAPACITY + Long.BYTES;
     private static final long VALUES = USED + Long.BYTES;
+    public static final long MAX_CAPACITY = ((Long.MAX_VALUE - VALUES) >> SHIFT);
     private static final int MAX_TO_STRING = 1024;
     @Nullable
     private static Set<WeakReference<BinaryLongArrayReference>> binaryLongArrayReferences = null;
@@ -143,11 +144,21 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
             throws BufferOverflowException, IllegalArgumentException, IllegalStateException {
         assert (bytes.writePosition() & 0x7) == 0;
 
+        checkCapacity(capacity);
+
         bytes.writeLong(capacity);
         bytes.writeLong(0L); // used
         long start = bytes.writePosition();
-        bytes.zeroOut(start, start + (capacity << SHIFT));
-        bytes.writeSkip(capacity << SHIFT);
+        long sizeToSkip = capacity << SHIFT;
+        bytes.zeroOut(start, start + sizeToSkip);
+        bytes.writeSkip(sizeToSkip);
+    }
+
+    private static void checkCapacity(long capacity) {
+        if (capacity < 0)
+            throw new IllegalArgumentException("Capacity " + capacity + " is negative");
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("Capacity " + capacity + " is too large > " + MAX_CAPACITY);
     }
 
     /**
@@ -165,9 +176,12 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
             throws BufferOverflowException, IllegalStateException {
         assert (bytes.writePosition() & 0x7) == 0;
 
+        checkCapacity(capacity);
+
         bytes.writeLong(capacity);
         bytes.writeLong(0L); // used
-        bytes.writeSkip(capacity << SHIFT);
+        long sizeToSkip = capacity << SHIFT;
+        bytes.writeSkip(sizeToSkip);
     }
 
     /**
@@ -184,7 +198,7 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
     public static long peakLength(@NotNull BytesStore<?, ?> bytes, @NonNegative long offset)
             throws BufferUnderflowException, IllegalStateException {
         long capacity = bytes.readLong(offset + CAPACITY);
-        assert capacity > 0 : "capacity too small " + capacity;
+        checkCapacity(capacity);
         return (capacity << SHIFT) + VALUES;
     }
 
@@ -209,7 +223,7 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
             bytes.writeLong(offset + CAPACITY, capacityHint);
             capacity = capacityHint;
         }
-        assert capacity > 0 : "capacity too small " + capacity;
+        checkCapacity(capacity);
         return (capacity << SHIFT) + VALUES;
     }
 
@@ -322,7 +336,10 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
         if (used < 0 || used > capacity)
             throw new IORuntimeException("Corrupt used value");
 
-        bytes.readSkip(capacity << SHIFT);
+        checkCapacity(capacity);
+
+        long sizeToSkip = capacity << SHIFT;
+        bytes.readSkip(sizeToSkip);
         long len = bytes.readPosition() - position;
         bytesStore((Bytes) bytes, position, len);
     }
@@ -417,6 +434,8 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
             throws IllegalStateException {
         throwExceptionIfClosed();
 
+        if (capacity > MAX_CAPACITY)
+            throw new ArithmeticException("Capacity " + capacity + " is too large, would overflow sizeInBytes calculation.");
         return (capacity << SHIFT) + VALUES;
     }
 
