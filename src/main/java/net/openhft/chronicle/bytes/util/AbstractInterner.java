@@ -57,20 +57,35 @@ import static net.openhft.chronicle.core.Jvm.uncheckedCast;
  * *
  *
  * @param <T> the type of the object being interned
- * @author peter.lawrey
  */
 @SuppressWarnings("rawtypes")
 public abstract class AbstractInterner<T> {
+    /**
+     * The array storing {@link InternerEntry} objects. Concurrent modifications
+     * should be externally synchronised as no locking is performed here.
+     */
     protected final InternerEntry<T>[] entries;
+    /**
+     * Mask used to hash into {@link #entries}, typically {@code capacity - 1}.
+     */
     protected final int mask;
+    /**
+     * Shift value used when computing the secondary hash index.
+     */
     protected final int shift;
+    /**
+     * Flag toggled when choosing between the two hash slots for new entries. It
+     * approximates a round-robin placement to avoid hot spots.
+     */
     protected boolean toggle = false;
 
     /**
      * Constructor for creating an intern cache with the given capacity. The capacity will be adjusted to the next
      * power of 2 if it is not already a power of 2, to a limit of {@code 1 << 30}.
+     * The resulting structure is not inherently thread safe.
      *
      * @param capacity the desired capacity for the intern cache
+     * @throws IllegalArgumentException if {@code capacity} is negative
      */
     protected AbstractInterner(@NonNegative int capacity){
         int n = Maths.nextPower2(capacity, 128);
@@ -102,6 +117,7 @@ public abstract class AbstractInterner<T> {
      * @param cs the Bytes object to intern
      * @return the interned instance
      * @throws IORuntimeException       If an I/O error occurs
+     * @throws NullPointerException     if {@code cs} is {@code null}
      * @throws BufferUnderflowException If there is not enough data in the buffer
      * @throws ClosedIllegalStateException    If the resource has been released or closed.
      * @throws ThreadingIllegalStateException If this resource was accessed by multiple threads in an unsafe way
@@ -118,7 +134,8 @@ public abstract class AbstractInterner<T> {
      * by the remaining readable bytes.
      *
      * @param cs the BytesStore object to intern
-     * @return the interned instance
+     * @return the cached object instance
+     * @throws NullPointerException     if {@code cs} is {@code null}
      * @throws IORuntimeException       If an I/O error occurs
      * @throws BufferUnderflowException If there is not enough data in the buffer
      * @throws ClosedIllegalStateException    If the resource has been released or closed.
@@ -136,7 +153,8 @@ public abstract class AbstractInterner<T> {
      *
      * @param cs     the Bytes object to intern
      * @param length the length of the Bytes object to intern
-     * @return the interned instance
+     * @return the cached object instance
+     * @throws NullPointerException     if {@code cs} is {@code null}
      * @throws IORuntimeException       If an I/O error occurs
      * @throws BufferUnderflowException If there is not enough data in the buffer
      * @throws ClosedIllegalStateException    If the resource has been released or closed.
@@ -152,8 +170,9 @@ public abstract class AbstractInterner<T> {
      * otherwise, it adds the Bytes to the cache and returns the newly cached instance.
      *
      * @param cs     the Bytes to intern
-     * @param length of bytes to read
-     * @return the interned instance
+     * @param length number of bytes to read from {@code cs}
+     * @return the cached object instance
+     * @throws NullPointerException     if {@code cs} is {@code null}
      * @throws IORuntimeException       If an I/O error occurs
      * @throws BufferUnderflowException If there is not enough data in the buffer
      * @throws ClosedIllegalStateException    If the resource has been released or closed.
@@ -179,21 +198,22 @@ public abstract class AbstractInterner<T> {
         IOTools.unmonitor(bs);
         cs.read(cs.readPosition(), bytes, 0, length);
         entries[s == null || (s2 != null && toggle()) ? h : h2] = new InternerEntry<>(bs, t);
-        // UnsafeMemory UNSAFE storeFence
+        // Store fence ensures the entry is visible before returning
         return t;
     }
 
     /**
-     * Retrieves the value corresponding to the bytes store and length.
-     * This method must be implemented by subclasses.
+     * Converts the bytes from {@code bs} into an instance of {@code T}. The
+     * implementation must read exactly {@code length} bytes starting from
+     * {@code bs.readPosition()} without modifying that position.
      *
-     * @param bs     the bytes store
-     * @param length the length of the data in the bytes store
-     * @return the value corresponding to the given bytes store and length
-     * @throws IORuntimeException       If an IO error occurs
-     * @throws BufferUnderflowException If there is not enough data in the buffer
-     * @throws ClosedIllegalStateException    If the resource has been released or closed.
-     * @throws ThreadingIllegalStateException If this resource was accessed by multiple threads in an unsafe way
+     * @param bs     the bytes store supplying the data
+     * @param length the number of bytes to read
+     * @return the value derived from the byte sequence
+     * @throws IORuntimeException       if an I/O error occurs
+     * @throws BufferUnderflowException if there is insufficient data available
+     * @throws ClosedIllegalStateException    if the resource has been released or closed
+     * @throws ThreadingIllegalStateException if accessed by multiple threads unsafely
      */
     @NotNull
     protected abstract T getValue(BytesStore<?, ?> bs, @NonNegative int length)
@@ -224,14 +244,20 @@ public abstract class AbstractInterner<T> {
      * @param <T> the type of the object being interned
      */
     private static final class InternerEntry<T> {
+        /**
+         * A heap-based copy of the original byte sequence used for equality checks.
+         */
         final BytesStore<?, ?> bytes;
+        /**
+         * The cached object instance.
+         */
         final T t;
 
         /**
-         * Constructs an InternerEntry with the given bytes store and value.
+         * Constructs an {@code InternerEntry}.
          *
-         * @param bytes the bytes store
-         * @param t     the value
+         * @param bytes a heap-based copy of the byte sequence
+         * @param t     the cached value
          */
         InternerEntry(BytesStore<?, ?> bytes, T t) {
             this.bytes = bytes;
