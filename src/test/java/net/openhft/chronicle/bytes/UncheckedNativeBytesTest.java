@@ -21,7 +21,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.BufferOverflowException;
-import java.nio.BufferUnderflowException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -97,6 +96,7 @@ class UncheckedNativeBytesTest {
         assertTrue(result);
         verify(underlyingBytes.bytesStore()).compareAndSwapInt(eq(offset), eq(expected), eq(value));
     }
+
     @Test
     void ensureCapacityShouldExpandCapacityIfNeeded() {
         // Example test: Ensure capacity expands as expected.

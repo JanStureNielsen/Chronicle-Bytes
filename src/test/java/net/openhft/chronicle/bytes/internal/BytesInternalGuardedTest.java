@@ -51,14 +51,7 @@ public class BytesInternalGuardedTest extends BytesTestCommon {
                 {"Guarded", true}
         });
     }
-    /*
 
-        @BeforeClass
-        public static void notMacArm() {
-            assumeFalse(Jvm.isMacArm());
-        }
-
-    */
     @AfterClass
     public static void resetGuarded() {
         NativeBytes.resetNewGuarded();
@@ -78,7 +71,7 @@ public class BytesInternalGuardedTest extends BytesTestCommon {
         bs.write(0, new byte[]{0x76, 0x61, 0x6c, 0x75, 0x65}); // "value" string
 
         StringBuilder sb = new StringBuilder();
-        sb.append("你好");
+        sb.append("\u4f60\u597d");
 
         BytesInternal.parse8bit(0, bs, sb, 5);
         String actual = sb.toString();

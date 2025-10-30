@@ -26,7 +26,6 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import static net.openhft.chronicle.core.UnsafeMemory.UNSAFE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -224,7 +223,7 @@ public class UnsafeTextTest extends BytesTestCommon {
         if (end != 0L)
             fail("Overwrite: " + Long.toHexString(end));
         return LongStream.range(address, endAddress)
-                .mapToInt(addr -> OS.memory().readByte( addr))
+                .mapToInt(addr -> OS.memory().readByte(addr))
                 .mapToObj(c -> (char) c)
                 .reduce(new StringBuilder(), StringBuilder::append, StringBuilder::append)
                 .toString();

@@ -720,7 +720,7 @@ public interface RandomDataInput extends RandomCommon {
      * @return true if the byte sequence can be read directly, false otherwise.
      */
     default boolean canReadDirect() {
-        return canReadDirect();
+        return canReadDirect(0);
     }
 
     /**
