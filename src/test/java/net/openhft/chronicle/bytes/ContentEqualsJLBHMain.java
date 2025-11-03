@@ -8,7 +8,7 @@ import net.openhft.chronicle.jlbh.JLBH;
 import net.openhft.chronicle.jlbh.JLBHOptions;
 import net.openhft.chronicle.jlbh.JLBHTask;
 
-public class ContentEqualsJLBHTest extends BytesTestCommon {
+public class ContentEqualsJLBHMain {
 
     // to use vectorizedMismatch you should run on java 11 or later, with the following VM args
     // --illegal-access=permit --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-exports java.base/jdk.internal.util=ALL-UNNAMED
@@ -20,12 +20,12 @@ public class ContentEqualsJLBHTest extends BytesTestCommon {
 
     static boolean isDirect = true;
 
-    static int size = 1024;
+    private static int size = 1024;
 
     private final Bytes<?> left = Bytes.allocateElasticDirect();
     private final Bytes<?> right = Bytes.allocateElasticDirect();
 
-    private ContentEqualsJLBHTest() {
+    private ContentEqualsJLBHMain() {
         for (int i = 0; i < size; i++) {
             left.append('x');
             right.append('x');
@@ -33,7 +33,7 @@ public class ContentEqualsJLBHTest extends BytesTestCommon {
     }
 
     public static void main(String[] args) {
-        ContentEqualsJLBHTest benchmark = new ContentEqualsJLBHTest();
+        ContentEqualsJLBHMain benchmark = new ContentEqualsJLBHMain();
         JLBHTask task = new SimpleJLBHTask(benchmark.left, benchmark.right);
         JLBHOptions jlbhOptions = new JLBHOptions()
                 .iterations(1_000_000)
@@ -46,13 +46,13 @@ public class ContentEqualsJLBHTest extends BytesTestCommon {
         jlbh.start();
     }
 
-    private static class SimpleJLBHTask implements JLBHTask {
+    static class SimpleJLBHTask implements JLBHTask {
 
         private JLBH jlbh;
         private final Bytes<?> left;
         private final Bytes<?> right;
 
-        public SimpleJLBHTask(Bytes<?> left, Bytes<?> right) {
+        SimpleJLBHTask(Bytes<?> left, Bytes<?> right) {
             this.left = left;
             this.right = right;
         }

@@ -89,7 +89,7 @@ class BytesEqualityTests {
             assertEquals(left, right);
         }
 
-        public Stream<Arguments> bufferArguments() {
+        Stream<Arguments> bufferArguments() {
             return Stream.of(
                     Arguments.of(Bytes.allocateElasticOnHeap(), Bytes.allocateElasticDirect()), // heap, direct
                     Arguments.of(Bytes.allocateElasticDirect(), Bytes.allocateElasticOnHeap()), // direct, heap
@@ -102,6 +102,7 @@ class BytesEqualityTests {
     /**
      * A suite of tests for exercising contentEquals and a variety of different heap and direct buffer combinations.
      */
+    @SuppressWarnings("java:S5976")
     @Nested
     class DirectVsHeapContentEqualsTests {
 

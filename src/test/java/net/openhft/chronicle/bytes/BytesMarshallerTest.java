@@ -3,6 +3,7 @@
  */
 package net.openhft.chronicle.bytes;
 
+import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class BytesMarshallerTest {
 
     static class TestClass {
+        @SuppressWarnings("WeakerAccess")
+        @UsedViaReflection
         public String[] stringArray;
     }
 
@@ -91,7 +94,7 @@ class BytesMarshallerTest {
         // Simulate reading -1 for null array
         when(bytesIn.readStopBit()).thenReturn(-1L);
         fieldAccess.setValue(testObject, bytesIn);
-        assert testObject.stringArray == null;
+        assertNull(testObject.stringArray);
     }
 
     @Test
@@ -99,7 +102,7 @@ class BytesMarshallerTest {
         // Simulate reading 0 for empty array
         when(bytesIn.readStopBit()).thenReturn(0L);
         fieldAccess.setValue(testObject, bytesIn);
-        assert testObject.stringArray.length == 0;
+        assertEquals(0, testObject.stringArray.length);
     }
 
     @Test
@@ -109,7 +112,7 @@ class BytesMarshallerTest {
         when(bytesIn.readRemaining()).thenReturn(12L);
         when(bytesIn.readObject(String.class)).thenReturn("hello", "world");
         fieldAccess.setValue(testObject, bytesIn);
-        assert Arrays.equals(testObject.stringArray, new String[]{"hello", "world"});
+        assertArrayEquals(new String[]{"hello", "world"}, testObject.stringArray);
     }
 
     @Test
