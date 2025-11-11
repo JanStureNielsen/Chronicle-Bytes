@@ -104,16 +104,9 @@ public final class UnsafeText {
     }
 
     /**
-     * Internal method for low level appending a String. The caller must ensure there is at least 32 bytes available.
-     *
-     * @param address to start writing
-     * @param d       double value
-     * @return endOfAddress
-     */
-    //      throws BufferOverflowException, IllegalArgumentException
-    /**
      * Writes the decimal form of {@code d} to {@code address}. Numbers outside
      * a safe range fall back to {@link Double#toString(double)}.
+     * Internal method for low level appending a String. The caller must ensure there is at least 32 bytes available.
      *
      * @return the address just past the last byte written
      */
